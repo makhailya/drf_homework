@@ -2,7 +2,7 @@ from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated
 from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
-from users.permissions import IsModerator, IsOwner
+from users.permissions import IsModerator, IsOwner, IsNotModerator
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -26,19 +26,18 @@ class CourseViewSet(viewsets.ModelViewSet):
         Разные права для разных действий.
         """
         if self.action == 'create':
-            # Создавать могут только НЕ модераторы (обычные пользователи)
-            self.permission_classes = [IsAuthenticated, ~IsModerator]
+            # Создавать могут только НЕ модераторы
+            return [IsAuthenticated(), IsNotModerator()]
         elif self.action in ['update', 'partial_update']:
             # Редактировать могут модераторы ИЛИ владельцы
-            self.permission_classes = [IsAuthenticated, IsModerator | IsOwner]
+            return [IsAuthenticated(), IsModerator() | IsOwner()]
         elif self.action == 'destroy':
             # Удалять могут только владельцы (НЕ модераторы)
-            self.permission_classes = [IsAuthenticated, ~IsModerator, IsOwner]
-        else:
+            return [IsAuthenticated(), IsOwner(), IsNotModerator()]
+        elif self.action in ['retrieve', 'list']:
             # Просматривать могут все авторизованные
-            self.permission_classes = [IsAuthenticated]
-
-        return [permission() for permission in self.permission_classes]
+            return [IsAuthenticated()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         """
@@ -70,7 +69,6 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             # Создавать могут только НЕ модераторы
             return [IsAuthenticated(), ~IsModerator()]
-        # Просматривать могут все авторизованные
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
@@ -103,7 +101,6 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     Обновление урока.
     """
     serializer_class = LessonSerializer
-    permission_classes = [IsAuthenticated, IsModerator | IsOwner]
 
     def get_queryset(self):
         """
@@ -115,16 +112,27 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
+    def get_permissions(self):
+        """
+        Редактировать могут модераторы ИЛИ владельцы.
+        """
+        return [IsAuthenticated(), IsModerator() | IsOwner()]
+
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """
     Удаление урока.
     """
     serializer_class = LessonSerializer
-    permission_classes = [IsAuthenticated, ~IsModerator, IsOwner]
 
     def get_queryset(self):
         """
-        Только свои уроки (модераторы не могут удалять).
+        Только свои уроки (модераторы не видят чужие для удаления).
         """
         return Lesson.objects.filter(owner=self.request.user)
+
+    def get_permissions(self):
+        """
+        Удалять могут только владельцы (НЕ модераторы).
+        """
+        return [IsAuthenticated(), IsOwner(), ~IsModerator()]

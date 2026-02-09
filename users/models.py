@@ -62,6 +62,8 @@ class Payment(models.Model):
     """
     Модель платежа.
     """
+    objects = models.Manager()
+
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Наличные'),
         ('transfer', 'Перевод на счёт'),

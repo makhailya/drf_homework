@@ -1,12 +1,10 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import User, Payment
 from .serializers import UserSerializer, PaymentSerializer, UserWithPaymentsSerializer
-from .permissions import IsModerator
+from .permissions import IsModerator, IsOwnProfile
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -28,31 +26,39 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         Разные права для разных действий.
         """
-        if self.action == 'create':  # Регистрация доступна всем
+        if self.action == 'create':
+            # Регистрация доступна всем
             return [AllowAny()]
-        return [IsAuthenticated()]  # Остальное только авторизованным
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Редактировать/удалять может только владелец профиля
+            return [IsAuthenticated(), IsOwnProfile()]
+        elif self.action == 'retrieve':
+            # Просматривать свой профиль может любой авторизованный
+            return [IsAuthenticated(), IsOwnProfile()]
+        elif self.action == 'list':
+            # Список пользователей только для модераторов
+            return [IsAuthenticated(), IsModerator()]
+        return [IsAuthenticated()]
 
-    def create(self, request, *args, **kwargs):
+    def perform_create(self, serializer):
         """
-        Регистрация нового пользователя.
+        Регистрация нового пользователя с хешированием пароля.
         """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        password = self.request.data.get('password')
+        user = serializer.save()
+        if password:
+            user.set_password(password)
+            user.save()
 
-        # Создаём пользователя с хешированным паролем
-        user = User.objects.create_user(
-            email=serializer.validated_data['email'],
-            password=request.data.get('password'),
-            first_name=serializer.validated_data.get('first_name', ''),
-            last_name=serializer.validated_data.get('last_name', ''),
-            phone=serializer.validated_data.get('phone', ''),
-            city=serializer.validated_data.get('city', ''),
-        )
-
-        return Response(
-            UserSerializer(user).data,
-            status=status.HTTP_201_CREATED
-        )
+    def perform_update(self, serializer):
+        """
+        Обновление пользователя с хешированием пароля (если передан).
+        """
+        password = self.request.data.get('password')
+        user = serializer.save()
+        if password:
+            user.set_password(password)
+            user.save()
 
 
 class PaymentViewSet(viewsets.ModelViewSet):

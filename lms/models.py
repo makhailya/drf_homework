@@ -6,6 +6,8 @@ class Course(models.Model):
     """
     Модель курса.
     """
+    objects = models.Manager()
+
     title = models.CharField(max_length=200, verbose_name='Название')
     preview = models.ImageField(upload_to='courses/previews/', blank=True, null=True, verbose_name='Превью')
     description = models.TextField(blank=True, verbose_name='Описание')
@@ -31,6 +33,8 @@ class Lesson(models.Model):
     """
     Модель урока.
     """
+    objects = models.Manager()
+
     title = models.CharField(max_length=200, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     preview = models.ImageField(upload_to='lessons/previews/', blank=True, null=True, verbose_name='Превью')
