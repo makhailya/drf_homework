@@ -7,7 +7,13 @@ from django.shortcuts import get_object_or_404
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
 from .paginators import CoursePaginator, LessonPaginator
-from users.permissions import IsModerator, IsOwner
+from users.permissions import (
+    IsModerator,
+    IsOwner,
+    IsNotModerator,
+    IsModeratorOrOwner,
+    IsOwnerAndNotModerator
+)
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -32,12 +38,16 @@ class CourseViewSet(viewsets.ModelViewSet):
         Разные права для разных действий.
         """
         if self.action == 'create':
-            return [IsAuthenticated(), ~IsModerator()]
+            # Создавать могут только НЕ модераторы
+            return [IsAuthenticated(), IsNotModerator()]
         elif self.action in ['update', 'partial_update']:
-            return [IsAuthenticated(), IsModerator() | IsOwner()]
+            # Редактировать могут модераторы ИЛИ владельцы
+            return [IsAuthenticated(), IsModeratorOrOwner()]
         elif self.action == 'destroy':
-            return [IsAuthenticated(), IsOwner(), ~IsModerator()]
+            # Удалять могут только владельцы (НЕ модераторы)
+            return [IsAuthenticated(), IsOwnerAndNotModerator()]
         elif self.action in ['retrieve', 'list']:
+            # Просматривать могут все авторизованные
             return [IsAuthenticated()]
         return [IsAuthenticated()]
 
@@ -53,7 +63,7 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
     Список и создание уроков.
     """
     serializer_class = LessonSerializer
-    pagination_class = LessonPaginator  
+    pagination_class = LessonPaginator
 
     def get_queryset(self):
         """
@@ -70,7 +80,8 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
         Права доступа.
         """
         if self.request.method == 'POST':
-            return [IsAuthenticated(), ~IsModerator()]
+            # Создавать могут только НЕ модераторы
+            return [IsAuthenticated(), IsNotModerator()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
@@ -103,6 +114,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     Обновление урока.
     """
     serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsModeratorOrOwner]
 
     def get_queryset(self):
         """
@@ -114,30 +126,19 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
-    def get_permissions(self):
-        """
-        Редактировать могут модераторы ИЛИ владельцы.
-        """
-        return [IsAuthenticated(), IsModerator() | IsOwner()]
-
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """
     Удаление урока.
     """
     serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsOwnerAndNotModerator]
 
     def get_queryset(self):
         """
         Только свои уроки (модераторы не видят чужие для удаления).
         """
         return Lesson.objects.filter(owner=self.request.user)
-
-    def get_permissions(self):
-        """
-        Удалять могут только владельцы (НЕ модераторы).
-        """
-        return [IsAuthenticated(), IsOwner(), ~IsModerator()]
 
 
 class SubscriptionAPIView(APIView):

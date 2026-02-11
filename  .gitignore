@@ -44,7 +44,7 @@ Thumbs.db
 
 # Environment
 .env
-.env.local
+*.pyc
 
 # Coverage
 htmlcov/
@@ -52,4 +52,7 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
-.hypothesis/
+coverage_report.txt
+
+# Database
+*.sqlite3
