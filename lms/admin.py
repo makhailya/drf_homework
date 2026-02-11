@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Lesson
+from .models import Course, Lesson, Subscription  # ← Добавили Subscription
 
 
 class LessonInline(admin.TabularInline):
@@ -15,7 +15,7 @@ class CourseAdmin(admin.ModelAdmin):
     """
     Админка для модели Course.
     """
-    list_display = ('title', 'get_lessons_count')
+    list_display = ('title', 'owner', 'get_lessons_count')
     search_fields = ('title', 'description')
     inlines = [LessonInline]
 
@@ -31,7 +31,16 @@ class LessonAdmin(admin.ModelAdmin):
     """
     Админка для модели Lesson.
     """
-    list_display = ('title', 'course', 'video_url')
+    list_display = ('title', 'course', 'owner', 'video_url')
     list_filter = ('course',)
     search_fields = ('title', 'description', 'course__title')
-    
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    """
+    Админка для модели Subscription.
+    """
+    list_display = ('user', 'course', 'created_at')
+    list_filter = ('course', 'created_at')
+    search_fields = ('user__email', 'course__title')
