@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Course, Lesson
-from .validators import validate_youtube_url  # ← ДОБАВИЛИ
+from .validators import validate_youtube_url
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -13,7 +13,6 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = ('id', 'title', 'description', 'preview', 'video_url', 'course', 'owner', 'owner_email')
         read_only_fields = ('owner',)
-        # Указываем валидатор для video_url
         extra_kwargs = {
             'video_url': {'validators': [validate_youtube_url]}
         }
@@ -27,7 +26,7 @@ class CourseSerializer(serializers.ModelSerializer):
     lessons_count = serializers.SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
     owner_email = serializers.EmailField(source='owner.email', read_only=True)
-    is_subscribed = serializers.SerializerMethodField()  # ← Добавим потом для подписки
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = Course

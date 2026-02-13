@@ -6,8 +6,6 @@ class Course(models.Model):
     """
     Модель курса.
     """
-    objects = models.Manager()
-
     title = models.CharField(max_length=200, verbose_name='Название')
     preview = models.ImageField(upload_to='courses/previews/', blank=True, null=True, verbose_name='Превью')
     description = models.TextField(blank=True, verbose_name='Описание')
@@ -16,7 +14,7 @@ class Course(models.Model):
         on_delete=models.CASCADE,
         related_name='courses',
         verbose_name='Владелец',
-        null=True,  # Временно разрешаем null для существующих записей
+        null=True,
         blank=True
     )
 
@@ -33,8 +31,6 @@ class Lesson(models.Model):
     """
     Модель урока.
     """
-    objects = models.Manager()
-
     title = models.CharField(max_length=200, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     preview = models.ImageField(upload_to='lessons/previews/', blank=True, null=True, verbose_name='Превью')
@@ -50,7 +46,7 @@ class Lesson(models.Model):
         on_delete=models.CASCADE,
         related_name='lessons',
         verbose_name='Владелец',
-        null=True,  # Временно разрешаем null для существующих записей
+        null=True,
         blank=True
     )
 
@@ -84,7 +80,7 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        unique_together = ('user', 'course')  # Один пользователь не может подписаться дважды
+        unique_together = ('user', 'course')
 
     def __str__(self):
         return f'{self.user.email} подписан на {self.course.title}'

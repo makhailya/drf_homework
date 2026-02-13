@@ -18,7 +18,14 @@ from users.permissions import (
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
-    ViewSet для модели Course с разграничением прав.
+    ViewSet для управления курсами.
+
+    list: Получить список всех курсов (модераторы видят все, пользователи - только свои)
+    create: Создать новый курс (только для не-модераторов)
+    retrieve: Получить информацию о курсе
+    update: Обновить курс (модераторы или владельцы)
+    partial_update: Частично обновить курс (модераторы или владельцы)
+    destroy: Удалить курс (только владельцы, не модераторы)
     """
     serializer_class = CourseSerializer
     pagination_class = CoursePaginator
@@ -38,16 +45,12 @@ class CourseViewSet(viewsets.ModelViewSet):
         Разные права для разных действий.
         """
         if self.action == 'create':
-            # Создавать могут только НЕ модераторы
             return [IsAuthenticated(), IsNotModerator()]
         elif self.action in ['update', 'partial_update']:
-            # Редактировать могут модераторы ИЛИ владельцы
             return [IsAuthenticated(), IsModeratorOrOwner()]
         elif self.action == 'destroy':
-            # Удалять могут только владельцы (НЕ модераторы)
             return [IsAuthenticated(), IsOwnerAndNotModerator()]
         elif self.action in ['retrieve', 'list']:
-            # Просматривать могут все авторизованные
             return [IsAuthenticated()]
         return [IsAuthenticated()]
 
@@ -60,7 +63,10 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
     """
-    Список и создание уроков.
+    Список уроков и создание нового урока.
+
+    GET: Получить список всех уроков (модераторы видят все, пользователи - только свои)
+    POST: Создать новый урок (только для не-модераторов)
     """
     serializer_class = LessonSerializer
     pagination_class = LessonPaginator
@@ -80,7 +86,6 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
         Права доступа.
         """
         if self.request.method == 'POST':
-            # Создавать могут только НЕ модераторы
             return [IsAuthenticated(), IsNotModerator()]
         return [IsAuthenticated()]
 
@@ -93,7 +98,7 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
     """
-    Просмотр одного урока.
+    Получить информацию о конкретном уроке.
     """
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
@@ -111,7 +116,7 @@ class LessonRetrieveAPIView(generics.RetrieveAPIView):
 
 class LessonUpdateAPIView(generics.UpdateAPIView):
     """
-    Обновление урока.
+    Обновить информацию об уроке (модераторы или владельцы).
     """
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
@@ -129,7 +134,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """
-    Удаление урока.
+    Удалить урок (только владельцы, не модераторы).
     """
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsOwnerAndNotModerator]
@@ -144,12 +149,20 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
 class SubscriptionAPIView(APIView):
     """
     Управление подпиской на курс.
+
+    POST: Подписаться или отписаться от курса (переключатель)
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         """
         Подписаться или отписаться от курса.
+
+        Параметры:
+        - course_id: ID курса для подписки/отписки
+
+        Возвращает:
+        - message: "Подписка добавлена" или "Подписка удалена"
         """
         user = request.user
         course_id = request.data.get('course_id')
