@@ -4,9 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
 from .paginators import CoursePaginator, LessonPaginator
+from .tasks import send_course_update_notification  # ← ДОБАВЬТЕ
 from users.permissions import (
     IsModerator,
     IsOwner,
@@ -19,13 +22,6 @@ from users.permissions import (
 class CourseViewSet(viewsets.ModelViewSet):
     """
     ViewSet для управления курсами.
-
-    list: Получить список всех курсов (модераторы видят все, пользователи - только свои)
-    create: Создать новый курс (только для не-модераторов)
-    retrieve: Получить информацию о курсе
-    update: Обновить курс (модераторы или владельцы)
-    partial_update: Частично обновить курс (модераторы или владельцы)
-    destroy: Удалить курс (только владельцы, не модераторы)
     """
     serializer_class = CourseSerializer
     pagination_class = CoursePaginator
@@ -59,6 +55,26 @@ class CourseViewSet(viewsets.ModelViewSet):
         Автоматически привязываем курс к создателю.
         """
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """
+        Обновление курса с отправкой уведомлений подписчикам.
+        """
+        course = self.get_object()
+
+        # Проверяем, прошло ли более 4 часов с последнего обновления
+        should_notify = True
+        if course.updated_at:
+            time_since_update = timezone.now() - course.updated_at
+            if time_since_update < timedelta(hours=4):
+                should_notify = False
+
+        # Сохраняем изменения
+        serializer.save()
+
+        # Отправляем уведомления асинхронно (если прошло более 4 часов)
+        if should_notify:
+            send_course_update_notification.delay(course.id)
 
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
