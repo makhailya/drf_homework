@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Lesson, Subscription  # ← Добавили Subscription
+from .models import Course, Lesson, Subscription
 
 
 class LessonInline(admin.TabularInline):

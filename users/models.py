@@ -1,18 +1,19 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from lms.models import Course, Lesson
 
 
 class UserManager(BaseUserManager):
     """
-    Кастомный менеджер для модели User, где email используется вместо username.
+    Менеджер для кастомной модели пользователя.
     """
+
     def create_user(self, email, password=None, **extra_fields):
         """
-        Создаёт и сохраняет обычного пользователя с email и паролем.
+        Создать и сохранить обычного пользователя.
         """
         if not email:
-            raise ValueError('Email должен быть указан')
+            raise ValueError('Email обязателен')
+
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -21,25 +22,25 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, password=None, **extra_fields):
         """
-        Создаёт и сохраняет суперпользователя с email и паролем.
+        Создать и сохранить суперпользователя.
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
 
         if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser должен иметь is_staff=True.')
+            raise ValueError('Суперпользователь должен иметь is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser должен иметь is_superuser=True.')
+            raise ValueError('Суперпользователь должен иметь is_superuser=True.')
 
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
     """
-    Кастомная модель пользователя с авторизацией по email.
+    Кастомная модель пользователя с email вместо username.
     """
-    username = None  # Убираем поле username
+    username = None
     email = models.EmailField(unique=True, verbose_name='Email')
     phone = models.CharField(max_length=35, blank=True, null=True, verbose_name='Телефон')
     city = models.CharField(max_length=100, blank=True, null=True, verbose_name='Город')
@@ -48,7 +49,7 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    objects = UserManager()  # Используем кастомный менеджер
+    objects = UserManager()
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -62,8 +63,6 @@ class Payment(models.Model):
     """
     Модель платежа.
     """
-    objects = models.Manager()
-
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Наличные'),
         ('transfer', 'Перевод на счёт'),
@@ -75,33 +74,52 @@ class Payment(models.Model):
         related_name='payments',
         verbose_name='Пользователь'
     )
-    payment_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата оплаты'
-    )
+    payment_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата платежа')
     paid_course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
+        'lms.Course',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='payments',
         verbose_name='Оплаченный курс'
     )
     paid_lesson = models.ForeignKey(
-        Lesson,
-        on_delete=models.CASCADE,
+        'lms.Lesson',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='payments',
         verbose_name='Оплаченный урок'
     )
-    amount = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name='Сумма оплаты'
-    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Сумма')
     payment_method = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=PAYMENT_METHOD_CHOICES,
         verbose_name='Способ оплаты'
+    )
+
+    # Поля для Stripe
+    stripe_session_id = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name='ID сессии Stripe'
+    )
+    payment_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name='Ссылка на оплату'
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        default='pending',
+        choices=[
+            ('pending', 'Ожидает оплаты'),
+            ('paid', 'Оплачено'),
+            ('failed', 'Ошибка'),
+        ],
+        verbose_name='Статус платежа'
     )
 
     class Meta:
@@ -110,8 +128,4 @@ class Payment(models.Model):
         ordering = ['-payment_date']
 
     def __str__(self):
-        if self.paid_course:
-            return f'{self.user.email} - {self.paid_course.title} - {self.amount}'
-        elif self.paid_lesson:
-            return f'{self.user.email} - {self.paid_lesson.title} - {self.amount}'
-        return f'{self.user.email} - {self.amount}'
+        return f'{self.user.email} - {self.amount} - {self.payment_date}'

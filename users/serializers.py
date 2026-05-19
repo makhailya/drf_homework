@@ -22,9 +22,18 @@ class PaymentSerializer(serializers.ModelSerializer):
             'paid_lesson',
             'lesson_title',
             'amount',
-            'payment_method'
+            'payment_method',
+            'stripe_session_id',
+            'payment_link',
+            'payment_status',
         )
-        read_only_fields = ('payment_date',)
+        read_only_fields = (
+            'user',
+            'payment_date',
+            'stripe_session_id',
+            'payment_link',
+            'payment_status'
+        )
 
 
 # ← НОВЫЙ сериализатор с историей платежей
