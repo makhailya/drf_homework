@@ -1,289 +1,357 @@
-# Django REST Framework - LMS проект
+# LMS API - Learning Management System
 
-Проект системы управления обучением (Learning Management System) с использованием Django и Django REST Framework.
+Полнофункциональный REST API для системы управления обучением на Django REST Framework.
 
-## Описание
+## 🚀 Технологии
 
-Проект содержит:
-- Кастомную модель пользователя с авторизацией по email
-- Модели курсов и уроков
-- REST API для всех моделей
-- CRUD операции для курсов (через ViewSet) и уроков (через Generic-классы)
+- **Backend**: Django 5.2, Django REST Framework
+- **База данных**: PostgreSQL
+- **Авторизация**: JWT (Simple JWT)
+- **Асинхронные задачи**: Celery + Redis
+- **Платежи**: Stripe
+- **Документация**: drf-yasg (Swagger/ReDoc)
+- **Тесты**: Django TestCase (87% coverage)
 
-## Установка и запуск
+## 📋 Функционал
 
-### 1. Клонирование репозитория
+### Пользователи и авторизация
+- Регистрация и JWT авторизация
+- Кастомная модель User (email вместо username)
+- Профиль пользователя с историей платежей
+- Система прав доступа (модераторы, владельцы объектов)
 
+### Курсы и уроки
+- CRUD операции для курсов и уроков
+- Nested сериализация (уроки внутри курса)
+- Фильтрация и пагинация
+- Валидация YouTube URL для видео
+- Отслеживание владельцев контента
+
+### Подписки
+- Подписка/отписка на обновления курсов
+- Асинхронная email-рассылка при обновлении курса
+- Защита от спама (уведомления не чаще раза в 4 часа)
+
+### Платежи
+- Интеграция со Stripe для приёма платежей
+- Создание платёжных сессий
+- Проверка статуса оплаты
+- История платежей пользователя
+
+### Фоновые задачи
+- Асинхронная отправка email через Celery
+- Периодическая блокировка неактивных пользователей (30 дней)
+- Celery Beat для планирования задач
+
+## 🛠 Установка и запуск
+
+### Предварительные требования
+
+- Python 3.10+
+- PostgreSQL 14+
+- Redis 6+
+
+### Установка
+
+1. **Клонируйте репозиторий:**
 ```bash
-git clone <your-repository-url>
+git clone <your-repo-url>
 cd drf_homework
 ```
 
-### 2. Создание виртуального окружения
-
+2. **Создайте виртуальное окружение:**
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # Для Linux/Mac
-# или
-venv\Scripts\activate  # Для Windows
+python -m venv venv
+source venv/bin/activate  # На Windows: venv\Scripts\activate
 ```
 
-### 3. Установка зависимостей
-
+3. **Установите зависимости:**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Применение миграций
-
+4. **Настройте PostgreSQL:**
 ```bash
-python manage.py makemigrations
+psql postgres
+CREATE DATABASE drf_lms_db;
+CREATE USER drf_lms_user WITH PASSWORD 'your_password';
+ALTER ROLE drf_lms_user SET client_encoding TO 'utf8';
+ALTER ROLE drf_lms_user SET default_transaction_isolation TO 'read committed';
+ALTER ROLE drf_lms_user SET timezone TO 'Europe/Riga';
+GRANT ALL PRIVILEGES ON DATABASE drf_lms_db TO drf_lms_user;
+ALTER USER drf_lms_user CREATEDB;
+\q
+```
+
+5. **Создайте файл `.env`:**
+```
+DB_NAME=drf_lms_db
+DB_USER=drf_lms_user
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+SECRET_KEY=your-secret-key-here
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+STRIPE_SECRET_KEY=sk_test_your_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_key
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your_email@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+DEFAULT_FROM_EMAIL=noreply@lms.local
+```
+
+6. **Примените миграции:**
+```bash
 python manage.py migrate
 ```
 
-### 5. Создание суперпользователя
-
+7. **Создайте суперпользователя:**
 ```bash
 python manage.py createsuperuser
 ```
 
-При создании вас попросят ввести email и пароль (без username).
+8. **Создайте группу модераторов:**
+```bash
+python manage.py shell
+>>> from django.contrib.auth.models import Group
+>>> Group.objects.create(name='moderators')
+>>> exit()
+```
 
-### 6. Запуск сервера
+### Запуск
 
+Вам потребуется **4 терминала**:
+
+**Терминал 1 - Django:**
 ```bash
 python manage.py runserver
 ```
 
-Проект будет доступен по адресу: http://127.0.0.1:8000/
+**Терминал 2 - Redis:**
+```bash
+redis-server
+```
 
-## Структура проекта
+**Терминал 3 - Celery Worker:**
+```bash
+celery -A config worker -l info
+```
 
+**Терминал 4 - Celery Beat:**
+```bash
+celery -A config beat -l info
+```
+
+## 📖 API Документация
+
+После запуска сервера документация доступна по адресам:
+
+- **Swagger UI**: http://127.0.0.1:8000/api/docs/
+- **ReDoc**: http://127.0.0.1:8000/api/redoc/
+- **OpenAPI Schema**: http://127.0.0.1:8000/api/swagger.json
+
+## 🧪 Тестирование
+
+Запуск тестов:
+```bash
+python manage.py test
+```
+
+Проверка покрытия:
+```bash
+coverage run --source='.' manage.py test
+coverage report
+coverage html  # HTML отчёт в htmlcov/index.html
+```
+
+Текущее покрытие: **87%**
+
+## 🔑 Основные эндпоинты
+
+### Авторизация
+- `POST /api/token/` - Получить JWT токен
+- `POST /api/token/refresh/` - Обновить токен
+- `POST /api/users/` - Регистрация (без токена)
+
+### Курсы
+- `GET /api/courses/` - Список курсов
+- `POST /api/courses/` - Создать курс
+- `GET /api/courses/{id}/` - Детали курса
+- `PATCH /api/courses/{id}/` - Обновить курс
+- `DELETE /api/courses/{id}/` - Удалить курс
+
+### Уроки
+- `GET /api/lessons/` - Список уроков
+- `POST /api/lessons/` - Создать урок
+- `GET /api/lessons/{id}/` - Детали урока
+- `PATCH /api/lessons/{id}/update/` - Обновить урок
+- `DELETE /api/lessons/{id}/delete/` - Удалить урок
+
+### Подписки
+- `POST /api/subscription/` - Подписаться/отписаться от курса
+
+### Платежи
+- `GET /api/payments/` - Список платежей
+- `POST /api/payments/` - Создать платёж (получить ссылку на оплату)
+- `GET /api/payments/{id}/status/` - Проверить статус платежа
+
+## 👥 Права доступа
+
+### Обычные пользователи
+- ✅ Создавать курсы и уроки
+- ✅ Редактировать свои курсы и уроки
+- ✅ Удалять свои курсы и уроки
+- ✅ Просматривать только свой контент
+
+### Модераторы
+- ✅ Просматривать все курсы и уроки
+- ✅ Редактировать любые курсы и уроки
+- ❌ Создавать курсы и уроки
+- ❌ Удалять курсы и уроки
+
+## 💳 Тестовые карты Stripe
+
+Для тестирования платежей используйте:
+- **Успешная оплата**: 4242 4242 4242 4242
+- **Требуется аутентификация**: 4000 0025 0000 3155
+- **Отклонена**: 4000 0000 0000 9995
+
+Дата: любая будущая, CVC: любой 3-значный код
+
+## 📧 Email уведомления
+
+В режиме разработки письма выводятся в консоль Django.
+
+Для production настройте реальный SMTP в `.env`:
+```
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your_email@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+```
+
+## 🔄 Celery задачи
+
+### Асинхронные задачи
+- **send_course_update_notification** - Рассылка при обновлении курса
+
+### Периодические задачи (Celery Beat)
+- **deactivate_inactive_users** - Блокировка пользователей без активности > 30 дней (запуск каждый день в 00:00)
+
+## 📦 Структура проекта
 ```
 drf_homework/
-├── config/              # Основная конфигурация проекта
+├── config/              # Настройки проекта
 │   ├── settings.py
 │   ├── urls.py
-│   ├── wsgi.py
-│   └── asgi.py
+│   └── celery.py
 ├── users/               # Приложение пользователей
-│   ├── models.py       # Кастомная модель User
-│   ├── serializers.py
+│   ├── models.py        # User, Payment
 │   ├── views.py
-│   ├── urls.py
-│   └── admin.py
-├── lms/                 # Приложение курсов и уроков
-│   ├── models.py       # Модели Course и Lesson
 │   ├── serializers.py
+│   ├── permissions.py
+│   └── tasks.py         # Celery задачи
+├── lms/                 # Приложение обучения
+│   ├── models.py        # Course, Lesson, Subscription
 │   ├── views.py
-│   ├── urls.py
-│   └── admin.py
-├── media/               # Медиа-файлы
-├── manage.py
+│   ├── serializers.py
+│   ├── validators.py
+│   ├── paginators.py
+│   └── tasks.py         # Celery задачи
 ├── requirements.txt
-└── .gitignore
+├── .env
+├── .gitignore
+└── README.md
 ```
 
-## Модели
+## 🐛 Известные ограничения
 
-### User (users/models.py)
-- **email** - Email (используется для авторизации)
-- **phone** - Телефон
-- **city** - Город
-- **avatar** - Аватар
+- Email отправка работает только в тестовом режиме (console backend)
+- Stripe работает в тестовом режиме
+- Celery Beat требует отдельного процесса
 
-### Course (lms/models.py)
-- **title** - Название курса
-- **preview** - Превью (картинка)
-- **description** - Описание курса
+## 📄 Лицензия
 
-### Lesson (lms/models.py)
-- **title** - Название урока
-- **description** - Описание урока
-- **preview** - Превью (картинка)
-- **video_url** - Ссылка на видео
-- **course** - Связь с курсом (ForeignKey)
+Учебный проект
 
-## API Endpoints
+## 👨‍💻 Автор
 
-### Пользователи (Users)
-
-**Базовый URL:** `/api/users/`
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/users/` | Список всех пользователей |
-| POST | `/api/users/` | Создать пользователя |
-| GET | `/api/users/{id}/` | Получить пользователя по ID |
-| PUT | `/api/users/{id}/` | Обновить пользователя |
-| PATCH | `/api/users/{id}/` | Частично обновить пользователя |
-| DELETE | `/api/users/{id}/` | Удалить пользователя |
-
-### Курсы (Courses) - ViewSet
-
-**Базовый URL:** `/api/courses/`
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/courses/` | Список всех курсов |
-| POST | `/api/courses/` | Создать курс |
-| GET | `/api/courses/{id}/` | Получить курс по ID |
-| PUT | `/api/courses/{id}/` | Обновить курс |
-| PATCH | `/api/courses/{id}/` | Частично обновить курс |
-| DELETE | `/api/courses/{id}/` | Удалить курс |
-
-### Уроки (Lessons) - Generic Views
-
-**Базовый URL:** `/api/lessons/`
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/lessons/` | Список всех уроков |
-| POST | `/api/lessons/` | Создать урок |
-| GET | `/api/lessons/{id}/` | Получить урок по ID |
-| PUT/PATCH | `/api/lessons/{id}/update/` | Обновить урок |
-| DELETE | `/api/lessons/{id}/delete/` | Удалить урок |
-
-## Примеры запросов в Postman
-
-### 1. Создание курса (POST)
-
-**URL:** `http://127.0.0.1:8000/api/courses/`
-
-**Method:** POST
-
-**Body (raw JSON):**
-```json
-{
-    "title": "Python для начинающих",
-    "description": "Курс по основам программирования на Python"
-}
+Ваше имя - SkyPro Django курс
 ```
 
-### 2. Получение списка курсов (GET)
+### Шаг 4: Обновите .gitignore
 
-**URL:** `http://127.0.0.1:8000/api/courses/`
+Убедитесь, что `.gitignore` содержит:
+```
+# Environment
+.env
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
 
-**Method:** GET
+# Database
+*.sqlite3
+db.sqlite3
 
-### 3. Создание урока (POST)
+# Media
+media/
 
-**URL:** `http://127.0.0.1:8000/api/lessons/`
+# Static
+staticfiles/
 
-**Method:** POST
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
 
-**Body (raw JSON):**
-```json
-{
-    "title": "Введение в Python",
-    "description": "Первый урок курса",
-    "video_url": "https://www.youtube.com/watch?v=example",
-    "course": 1
-}
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 ```
 
-### 4. Получение урока по ID (GET)
-
-**URL:** `http://127.0.0.1:8000/api/lessons/1/`
-
-**Method:** GET
-
-### 5. Обновление урока (PUT)
-
-**URL:** `http://127.0.0.1:8000/api/lessons/1/update/`
-
-**Method:** PUT или PATCH
-
-**Body (raw JSON):**
-```json
-{
-    "title": "Введение в Python - обновлено",
-    "description": "Обновленное описание первого урока",
-    "video_url": "https://www.youtube.com/watch?v=new-example",
-    "course": 1
-}
+### Шаг 5: Создайте `.env.example`
 ```
+# Database
+DB_NAME=drf_lms_db
+DB_USER=drf_lms_user
+DB_PASSWORD=your_password_here
+DB_HOST=localhost
+DB_PORT=5432
 
-### 6. Удаление урока (DELETE)
+# Django
+SECRET_KEY=your-secret-key-here
 
-**URL:** `http://127.0.0.1:8000/api/lessons/1/delete/`
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-**Method:** DELETE
+# Stripe
+STRIPE_SECRET_KEY=sk_test_your_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
 
-### 7. Создание пользователя (POST)
-
-**URL:** `http://127.0.0.1:8000/api/users/`
-
-**Method:** POST
-
-**Body (raw JSON):**
-```json
-{
-    "email": "user@example.com",
-    "first_name": "Иван",
-    "last_name": "Иванов",
-    "phone": "+371 12345678",
-    "city": "Рига"
-}
-```
-
-## Настройки Postman
-
-1. Откройте Postman
-2. Создайте новую коллекцию "DRF LMS"
-3. Для каждого endpoint создайте новый запрос
-4. В Headers добавьте:
-   - `Content-Type: application/json` (для POST, PUT, PATCH)
-5. Для загрузки изображений используйте `form-data` вместо `raw JSON`
-
-## Тестирование через браузер
-
-Django REST Framework предоставляет веб-интерфейс для тестирования API:
-
-- Откройте http://127.0.0.1:8000/api/courses/ в браузере
-- Откройте http://127.0.0.1:8000/api/lessons/ в браузере
-
-## Админ-панель
-
-Для доступа к админ-панели:
-
-1. Перейдите по адресу: http://127.0.0.1:8000/admin/
-2. Войдите используя email и пароль суперпользователя
-
-## Особенности реализации
-
-1. **Курсы (Course):**
-   - Реализованы через ViewSet
-   - Автоматически создаются все CRUD endpoints
-   - При получении курса возвращается список связанных уроков
-
-2. **Уроки (Lesson):**
-   - Реализованы через Generic-классы
-   - Каждая операция имеет отдельный класс и endpoint
-   - Связаны с курсом через ForeignKey
-
-3. **Пользователи (User):**
-   - Кастомная модель с авторизацией по email
-   - Убрано поле username
-   - Добавлены поля: phone, city, avatar
-
-## Зависимости
-
-- Django 5.0.1
-- djangorestframework 3.14.0
-- Pillow 10.2.0 (для работы с изображениями)
-
-## Примечания
-
-- База данных: SQLite (по умолчанию)
-- Медиа-файлы сохраняются в папке `media/`
-- DEBUG режим включен (для продакшена отключите в settings.py)
-- Авторизация и права доступа не настроены (по заданию)
-
-## Автор
-
-Ваше имя
-
-## Лицензия
-
-MIT
+# Email
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your_email@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+DEFAULT_FROM_EMAIL=noreply@lms.local
