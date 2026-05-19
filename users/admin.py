@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, Payment
 
 
 @admin.register(User)
@@ -26,4 +26,28 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'password1', 'password2', 'first_name', 'last_name', 'phone', 'city'),
         }),
     )
-    
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    """
+    Админка для модели Payment.
+    """
+    list_display = ('user', 'payment_date', 'paid_course', 'paid_lesson', 'amount', 'payment_method')
+    list_filter = ('payment_method', 'payment_date')
+    search_fields = ('user__email',)
+    ordering = ('-payment_date',)
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('user', 'amount', 'payment_method')
+        }),
+        ('Оплаченный контент', {
+            'fields': ('paid_course', 'paid_lesson')
+        }),
+        ('Даты', {
+            'fields': ('payment_date',)
+        }),
+    )
+
+    readonly_fields = ('payment_date',)
