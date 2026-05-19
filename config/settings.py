@@ -8,6 +8,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
 
@@ -15,6 +16,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
 
 # Application definition
 
@@ -25,10 +27,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    
     # Third party apps
     'rest_framework',
-
+    
     # Local apps
     'users',
     'lms',
@@ -64,6 +66,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+
 # Database
 DATABASES = {
     'default': {
@@ -71,6 +74,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -88,6 +92,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
 # Internationalization
 LANGUAGE_CODE = 'ru-ru'
 
@@ -96,6 +101,7 @@ TIME_ZONE = 'Europe/Riga'
 USE_I18N = True
 
 USE_TZ = True
+
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
