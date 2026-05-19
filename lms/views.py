@@ -1,8 +1,19 @@
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated
-from .models import Course, Lesson
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
-from users.permissions import IsModerator, IsOwner, IsNotModerator
+from .paginators import CoursePaginator, LessonPaginator
+from users.permissions import (
+    IsModerator,
+    IsOwner,
+    IsNotModerator,
+    IsModeratorOrOwner,
+    IsOwnerAndNotModerator
+)
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -10,6 +21,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     ViewSet для модели Course с разграничением прав.
     """
     serializer_class = CourseSerializer
+    pagination_class = CoursePaginator
 
     def get_queryset(self):
         """
@@ -30,10 +42,10 @@ class CourseViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsNotModerator()]
         elif self.action in ['update', 'partial_update']:
             # Редактировать могут модераторы ИЛИ владельцы
-            return [IsAuthenticated(), IsModerator() | IsOwner()]
+            return [IsAuthenticated(), IsModeratorOrOwner()]
         elif self.action == 'destroy':
             # Удалять могут только владельцы (НЕ модераторы)
-            return [IsAuthenticated(), IsOwner(), IsNotModerator()]
+            return [IsAuthenticated(), IsOwnerAndNotModerator()]
         elif self.action in ['retrieve', 'list']:
             # Просматривать могут все авторизованные
             return [IsAuthenticated()]
@@ -51,6 +63,7 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
     Список и создание уроков.
     """
     serializer_class = LessonSerializer
+    pagination_class = LessonPaginator
 
     def get_queryset(self):
         """
@@ -68,7 +81,7 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
         """
         if self.request.method == 'POST':
             # Создавать могут только НЕ модераторы
-            return [IsAuthenticated(), ~IsModerator()]
+            return [IsAuthenticated(), IsNotModerator()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
@@ -101,6 +114,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     Обновление урока.
     """
     serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsModeratorOrOwner]
 
     def get_queryset(self):
         """
@@ -112,18 +126,13 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
-    def get_permissions(self):
-        """
-        Редактировать могут модераторы ИЛИ владельцы.
-        """
-        return [IsAuthenticated(), IsModerator() | IsOwner()]
-
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """
     Удаление урока.
     """
     serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsOwnerAndNotModerator]
 
     def get_queryset(self):
         """
@@ -131,8 +140,34 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
         """
         return Lesson.objects.filter(owner=self.request.user)
 
-    def get_permissions(self):
+
+class SubscriptionAPIView(APIView):
+    """
+    Управление подпиской на курс.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
         """
-        Удалять могут только владельцы (НЕ модераторы).
+        Подписаться или отписаться от курса.
         """
-        return [IsAuthenticated(), IsOwner(), ~IsModerator()]
+        user = request.user
+        course_id = request.data.get('course_id')
+
+        if not course_id:
+            return Response(
+                {'error': 'course_id обязателен'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_object_or_404(Course, id=course_id)
+        subscription = Subscription.objects.filter(user=user, course=course)
+
+        if subscription.exists():
+            subscription.delete()
+            message = 'Подписка удалена'
+        else:
+            Subscription.objects.create(user=user, course=course)
+            message = 'Подписка добавлена'
+
+        return Response({'message': message}, status=status.HTTP_200_OK)

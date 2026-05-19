@@ -44,4 +44,15 @@ Thumbs.db
 
 # Environment
 .env
-.env.local
+*.pyc
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+coverage_report.txt
+
+# Database
+*.sqlite3
