@@ -6,6 +6,7 @@ class LessonSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Lesson.
     """
+
     class Meta:
         model = Lesson
         fields = ('id', 'title', 'description', 'preview', 'video_url', 'course')
@@ -14,8 +15,12 @@ class LessonSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Course.
+    Выводит количество уроков и список всех уроков курса.
     """
+    # Задание 1: Количество уроков
     lessons_count = serializers.SerializerMethodField()
+
+    # Задание 3: Список уроков курса (вложенный сериализатор)
     lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
@@ -25,4 +30,3 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_lessons_count(self, obj):
         """Получить количество уроков в курсе."""
         return obj.lessons.count()
-    

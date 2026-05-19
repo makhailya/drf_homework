@@ -1,10 +1,5 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import UserViewSet
+from django.urls import path
 
-router = DefaultRouter()
-router.register(r'', UserViewSet, basename='user')
-
-urlpatterns = [
-    path('', include(router.urls)),
-]
+# Этот файл больше не нужен для роутеров, они в config/urls.py
+# Оставляем пустым или можно удалить совсем
+urlpatterns = []
