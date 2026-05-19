@@ -1,0 +1,329 @@
+{
+	"info": {
+		"_postman_id": "drf-lms-homework",
+		"name": "DRF LMS Homework",
+		"description": "API коллекция для проекта Django REST Framework - LMS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Courses",
+			"item": [
+				{
+					"name": "Get All Courses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/courses/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Python для начинающих\",\n    \"description\": \"Полный курс по основам программирования на Python\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Course by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/courses/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Course (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Python для начинающих - ОБНОВЛЕНО\",\n    \"description\": \"Обновленное описание курса\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Partial Update Course (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Только обновление описания\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/courses/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", "1", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Lessons",
+			"item": [
+				{
+					"name": "Get All Lessons",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/lessons/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Lesson",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Урок 1: Введение в Python\",\n    \"description\": \"В этом уроке вы познакомитесь с основами Python\",\n    \"video_url\": \"https://www.youtube.com/watch?v=example123\",\n    \"course\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/lessons/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Lesson by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/lessons/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Lesson (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Урок 1: Введение в Python (обновлено)\",\n    \"description\": \"Обновленное описание урока\",\n    \"video_url\": \"https://www.youtube.com/watch?v=new-example\",\n    \"course\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/lessons/1/update/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", "1", "update", ""]
+						}
+					}
+				},
+				{
+					"name": "Partial Update Lesson (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"video_url\": \"https://www.youtube.com/watch?v=updated-link\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/lessons/1/update/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", "1", "update", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Lesson",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/lessons/1/delete/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "lessons", "1", "delete", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ""]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"first_name\": \"Иван\",\n    \"last_name\": \"Иванов\",\n    \"phone\": \"+371 12345678\",\n    \"city\": \"Рига\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ""]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Update User (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"first_name\": \"Иван\",\n    \"last_name\": \"Петров\",\n    \"phone\": \"+371 87654321\",\n    \"city\": \"Даугавпилс\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Partial Update User (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"city\": \"Юрмала\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "1", ""]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}
